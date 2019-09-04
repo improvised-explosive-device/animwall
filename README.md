@@ -12,28 +12,28 @@ For fun.
 $ animwall
 ```
 
-Ok, fine it's not that simple.  
-You'll need a conf file, located at `XDG_CONFIG_HOME/animwall.conf` to properly  
-run the script. The script will create an example file in the proper format for  
+Ok, fine it's not that simple.
+You'll need a conf file, located at `XDG_CONFIG_HOME/animwall.conf` to properly
+run the script. The script will create an example file in the proper format for
 you on first run if you do not already have a conf file.
 
 The format of the file is as follows:
 ```/path/to/wallpaper:WxH+X+Y```
 
-The path and monitor geometry are separated by a `:`. Each pair will be parsed  
-by the script as a `configuration` and it will output the animated wallpaper  
-found at `path` to the monitor geometry described by `WxH+X+Y`. The monitor  
+The path and monitor geometry are separated by a `:`. Each pair will be parsed
+by the script as a `configuration` and it will output the animated wallpaper
+found at `path` to the monitor geometry described by `WxH+X+Y`. The monitor
 geometry syntax is enforced by `xwinwrap`.
 
-Multiple `configurations` can be specified in the same file, separated by some  
-whitespace. A whitespace inside of a `configuration` section will not be parsed  
+Multiple `configurations` can be specified in the same file, separated by some
+whitespace. A whitespace inside of a `configuration` section will not be parsed
 correctly!
 
-By default, `animwall` runs with `nice 19` making it the lowest priority to  
-reduce resource usage. If you find mpv is not fast enough at nice 19, you can  
+By default, `animwall` runs with `nice 19` making it the lowest priority to
+reduce resource usage. If you find mpv is not fast enough at nice 19, you can
 edit the script to lower this number. It may increase CPU usage.
 
-This script is dumb. It will not auto stop when a window covers the wallpaper  
+This script is dumb. It will not auto stop when a window covers the wallpaper
 or anything fancy like that.
 
 ## License
