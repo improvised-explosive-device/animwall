@@ -28,15 +28,22 @@ __pids=""
 # $2 monitor coords
 wrapped()
 {
+  printf -- 'Running animwall: %s %s\n' "$1" "$2"
+
+  # Options "-un" "-fdt" only used by xwinwrap-git
+  # Will not work with shantz-xwinwrap-git
+
+  # Uses deprecated -wid option instead of --wid because
+  # xwinwrap will only interpret the WID as window id if it is
+  # on its own, attaching it with equals breaks it.
   exec nice -n "${__nice_value}" xwinwrap \
     -ni \
-    -un \
     -st \
-    -fdt \
     -sp \
     -nf \
     -b \
     -g "$2" \
+    -un \
     -- nice -n "${__nice_value}" mpv \
     -wid WID "$1" \
     --geometry="$2" \
@@ -96,6 +103,12 @@ main()
     printf -- 'Could not find animwall.conf file at %s\n' "${config_location}"
     printf -- 'Creating example file...\n'
     printf -- '%s\n' "$(cat << EOF
+# This is the configuration file for animwall
+#
+# Entries are expected one per line in the format
+# <FILE>:<WIDTHxHEIGHT+X+Y>
+#
+# Lines beginning with # are ignored
 ~/wallpapers/example_1.mp4:1920x1080+0+0
 ~/pictures/example2.jpg:2560x1440+1920+0
 EOF
@@ -108,14 +121,30 @@ EOF
     return 1
   fi
 
+  # Prepare IFS
+  # Split by lines only instead of whitespace
+  old_ifs="${IFS}"
+  IFS='
+'
+
   # Parse config file
   for config in ${animwall_configs}; do
+    case "${config}" in
+      \#*)
+        printf -- 'Ignore line with comment: %s\n' "${config}"
+        continue
+        ;;
+      *)
+        ;;
+    esac
+
     split_config="$(printf -- "%s" "${config}" | tr ':' ' ')"
     wallpaper="$(printf -- "%s" "${split_config}" | awk '{ print $1 }')"
     monitor="$(printf -- "%s" "${split_config}" | awk '{ print $2 }')"
 
     # In case the wallpaper path has ~ as HOME, we replace it
-    wallpaper="$(printf -- "%s" "${wallpaper}" | sed "s|^\~|$HOME|")"
+    # Replace all $HOME with literal HOME
+    wallpaper="$(printf -- "%s" "${wallpaper}" | sed "s|^\~|\$HOME|g" | sed "s|^\$HOME|${HOME}|g" )"
 
     if [ -n "${wallpaper}" ] && [ -n "${monitor}" ]; then
       wrapped "${wallpaper}" "${monitor}" &
@@ -135,7 +164,9 @@ EOF
     unset monitor
     unset config
   done
-  unset config
+
+  # Reset IFS
+  IFS="${old_ifs}"
 
   # Wait for all wrapped processes to finish
   #
@@ -143,6 +174,7 @@ EOF
   # space separated input
   # shellcheck disable=SC2086
   wait ${__pids}
+  cancel
 }
 
 main "$@"
