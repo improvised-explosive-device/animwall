@@ -95,7 +95,7 @@ main()
 
   # Check for config file
   animwall_configs=""
-  config_location="${XDG_CONFIG_DIR:-"${HOME}/.config"}/animwall.conf"
+  config_location="${XDG_CONFIG_DIR:-"${HOME}/.config"}/animwall/animwall.conf"
   if [ -f "${config_location}" ] && [ -r "${config_location}" ]; then
     printf -- 'Reading animwall.conf from %s\n' "${config_location}"
     animwall_configs="$(cat -- "${config_location}")"
