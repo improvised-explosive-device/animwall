@@ -95,13 +95,22 @@ main()
 
   # Check for config file
   animwall_configs=""
-  config_location="${XDG_CONFIG_DIR:-"${HOME}/.config"}/animwall/animwall.conf"
+  config_dir="${XDG_CONFIG_DIR:-"${HOME}/.config"}/animwall"
+  config_location="${config_dir}/animwall.conf"
   if [ -f "${config_location}" ] && [ -r "${config_location}" ]; then
     printf -- 'Reading animwall.conf from %s\n' "${config_location}"
     animwall_configs="$(cat -- "${config_location}")"
   else
     printf -- 'Could not find animwall.conf file at %s\n' "${config_location}"
     printf -- 'Creating example file...\n'
+
+    # Make directory
+    mkdir -p "${config_dir}" || {
+      printf -- 'Failed to make configuration directory at: %s' "${config_dir}"
+      return 1
+    }
+
+    # Make config file
     printf -- '%s\n' "$(cat << EOF
 # This is the configuration file for animwall
 #
