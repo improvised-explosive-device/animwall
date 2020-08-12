@@ -2,7 +2,7 @@
 #
 # The GPLv2 License
 #
-#   Copyright (C) 2019  Peter Kenji Yamanaka
+#   Copyright (C) 2020  Peter Kenji Yamanaka
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -25,28 +25,31 @@ __nice_value=19
 __pids=""
 
 # $1 wallpaper
-# $2 monitor coords
+# $2 geometry
+# $3 screen
 wrapped()
 {
-  printf -- 'Running animwall: %s %s\n' "$1" "$2"
+  printf -- '[ANIMWALL]: Launching...\n'
+  printf -- '    Wallpaper: "%s"\n' "$1"
+  printf -- '    Geometry:  "%s"\n' "$2"
+  printf -- '    Screen:    "%s"\n' "$3"
 
-  # Options "-un" "-fdt" only used by xwinwrap-git
+  # Options "-un" only used by xwinwrap-git
   # Will not work with shantz-xwinwrap-git
 
   # Uses deprecated -wid option instead of --wid because
   # xwinwrap will only interpret the WID as window id if it is
   # on its own, attaching it with equals breaks it.
   exec nice -n "${__nice_value}" xwinwrap \
+    -g "$2" \
     -ni \
     -st \
     -sp \
     -nf \
     -b \
-    -g "$2" \
     -un \
     -- nice -n "${__nice_value}" mpv \
     -wid WID "$1" \
-    --geometry="$2" \
     --no-osc \
     --no-osd-bar \
     --loop-file \
@@ -115,11 +118,11 @@ main()
 # This is the configuration file for animwall
 #
 # Entries are expected one per line in the format
-# <FILE>:<WIDTHxHEIGHT+X+Y>
+# <FILE>:<WIDTHxHEIGHT+X+Y>:<SCREEN>
 #
 # Lines beginning with # are ignored
-~/wallpapers/example_1.mp4:1920x1080+0+0
-~/pictures/example2.jpg:2560x1440+1920+0
+~/wallpapers/example_1.mp4:1920x1080+0+0:0
+~/pictures/example2.jpg:2560x1440+1920+0:1
 EOF
 )" > "${config_location}"
     return 1
@@ -149,28 +152,34 @@ EOF
 
     split_config="$(printf -- "%s" "${config}" | tr ':' ' ')"
     wallpaper="$(printf -- "%s" "${split_config}" | awk '{ print $1 }')"
-    monitor="$(printf -- "%s" "${split_config}" | awk '{ print $2 }')"
+    geometry="$(printf -- "%s" "${split_config}" | awk '{ print $2 }')"
+    screen="$(printf -- "%s" "${split_config}" | awk '{ print $3 }')"
 
     # In case the wallpaper path has ~ as HOME, we replace it
     # Replace all $HOME with literal HOME
     wallpaper="$(printf -- "%s" "${wallpaper}" | sed "s|^\~|\$HOME|g" | sed "s|^\$HOME|${HOME}|g" )"
 
-    if [ -n "${wallpaper}" ] && [ -n "${monitor}" ]; then
-      wrapped "${wallpaper}" "${monitor}" &
+    if [ -n "${wallpaper}" ] && [ -n "${geometry}" ] && [ -n "${screen}" ]; then
+      wrapped "${wallpaper}" "${geometry}" "${screen}" &
       __pids="$! ${__pids}"
     else
       if [ -z "${wallpaper}" ]; then
         printf -- 'Missing wallpaper path in config: %s\n' "${config}"
       fi
 
-      if [ -z "${monitor}" ]; then
-        printf -- 'Missing monitor geometry in config: %s\n' "${config}"
+      if [ -z "${geometry}" ]; then
+        printf -- 'Missing geometry in config: %s\n' "${config}"
+      fi
+
+      if [ -z "${screen}" ]; then
+        printf -- 'Missing screen in config: %s\n' "${config}"
       fi
     fi
 
     unset split_config
     unset wallpaper
-    unset monitor
+    unset geometry
+    unset screen
     unset config
   done
 
