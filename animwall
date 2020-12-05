@@ -58,7 +58,8 @@ wrapped()
     --panscan=1.0 \
     --no-keepaspect \
     --no-input-default-bindings \
-    --hwdec
+    --hwdec \
+    --stop-screensaver=no
 }
 
 cancel()
