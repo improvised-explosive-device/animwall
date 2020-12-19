@@ -22,24 +22,27 @@
 __nice_value=19
 
 # Arguments
-# Enable mpv arguments
-param_mpv=$(echo "$@" | egrep -o "(--(*\S+))")
-if [ -n "$param_mpv" ]; then
-  for prm in "$param_mpv"; do :; done
-  arglist=$(echo "$prm")
-  arglist_nb=$(echo $prm | sed 's:\n: :g')
-fi
-
 for arg in "$@"; do
+
   # Get parameter after argument
   param=$(echo $@ | grep -oP "(?<=$arg )[^ ]+")
+  param_mpv=$(echo "$@" | egrep -o "(--(*\S+))")
 
+  # -a, -arg : Pass arguments starting with '--' to mpv.
+  if [ "$arg" == "-a" ] || [ "$arg" == "-arg" ]; then
+    for prm in "$param_mpv"; do :; done
+      arglist=$(echo "$prm")
+      arglist_nb=$(echo $prm | sed 's:\n: :g')
+  fi
+
+  # -f, -file : Specify wallpaper manually.
   if [ "$arg" == "-f" ] || [ "$arg" == "-file" ]; then
     wallpaper_file=$param
     file="*"
     printf -- '- Manual mode enabled, overriding wallpaper..\n'
   fi
 
+  # -p, -powersave : Auto-pause.
   if [ "$arg" == "-p" ] || [ "$arg" == "-powersave" ]; then
     req=wmctrl
     req2=socat
@@ -50,6 +53,7 @@ for arg in "$@"; do
     fi
   fi
 
+  # -w, -wpg, -wpgtk : Generate & apply gtk theme from first frame.
   if [ "$arg" == "-w" ] || [ "$arg" == "-wpgtk" ] || [ "$arg" == "-wpg" ]; then
     req=wpg
     if command -v $req > /dev/null; then
@@ -59,15 +63,16 @@ for arg in "$@"; do
     fi
   fi
 
+  # -h, -help : Help section.
   if [ "$arg" == "-h" ] || [ "$arg" == "-help" ]; then
     printf -- '\n'
-    printf -- 'Usage: animwall [ --<param> -p -w -s <scaling_mode> -f /path/to/wallpaper ]\n'
+    printf -- 'Usage: animwall [ -a <params> -f <path> -p -w ]\n'
     printf -- '\n'
-    printf -- ' --<param>        - Pass parameters to mpv, eg. '--scale=nearest'.\n'
-    printf -- ' -f, -file        - Load wallpaper from file instead of animwall.conf.\n'
-    printf -- ' -p, -powersave   - Pause mpv when the desktop is not active.\n'
-    printf -- ' -w, -wpgtk       - Send first frame of video to wpgtk and apply color-scheme.\n'
-    printf -- ' -h, -help        - You are here.\n'
+    printf -- ' -a, -arg <params>   - Pass args beginning with "--" to mpv, eg. '--scale=nearest'.\n'
+    printf -- ' -f, -file <path>    - Load wallpaper from file instead of animwall.conf.\n'
+    printf -- ' -p, -powersave      - Pause mpv when the desktop is inactive.\n'
+    printf -- ' -w, -wpg, -wpgtk    - Generate & apply wpgtk theme from first frame.\n'
+    printf -- ' -h, -help           - You are here.\n'
     printf -- '\n'
     exit
   fi
