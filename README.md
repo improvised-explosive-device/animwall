@@ -10,7 +10,7 @@ For fun.
 
 ```
 $ animwall [ -p -w -s <scaling_mode> -f /path/to/wallpaper ]
- -s, -scaling     - Specify mpv scaling algorithm.
+ --<param>        - Pass parameters to mpv, eg. '--scale=nearest'.
  -f, -file        - Load wallpaper from file instead of animwall.conf.
  -p, -powersave   - Pause mpv when the desktop is not active.
  -w, -wpgtk       - Send first frame of video to wpgtk and apply color-scheme.
