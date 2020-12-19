@@ -9,7 +9,12 @@ For fun.
 ## Usage
 
 ```
-$ animwall
+$ animwall [ -p -w -s <scaling_mode> -f /path/to/wallpaper ]
+ -s, -scaling     - Specify mpv scaling algorithm.
+ -f, -file        - Load wallpaper from file instead of animwall.conf.
+ -p, -powersave   - Pause mpv when the desktop is not active.
+ -w, -wpgtk       - Send first frame of video to wpgtk and apply color-scheme.
+ -h, -help        - You are here.
 ```
 
 Ok, fine it's not that simple.
@@ -33,8 +38,8 @@ By default, `animwall` runs with `nice 19` making it the lowest priority to
 reduce resource usage. If you find mpv is not fast enough at nice 19, you can
 edit the script to lower this number. It may increase CPU usage.
 
-This script is dumb. It will not auto stop when a window covers the wallpaper
-or anything fancy like that.
+This script is dumb. ~~It will not auto stop when a window covers the wallpaper
+or anything fancy like that.~~ Hacky auto pause function included.
 
 ## License
 
