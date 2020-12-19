@@ -48,6 +48,7 @@ for arg in "$@"; do
     req2=socat
     if command -v $req > /dev/null && command -v $req2 > /dev/null; then
       autopause=on
+      printf -- '- Auto-pause enabled.\n'
     else
       printf -- '- You must have both "%s" & "%s" installed to to use powersave mode.\n' "$req" "$req2"
     fi
@@ -125,8 +126,6 @@ wrapped()
   printf -- '    Wallpaper-mpv: %s %s\n' "$1$file" "$arglist_nb"
   if [ -n "$jpeg" ]; then
   printf -- '    Wallpaper-wpg: %s\n' "$jpeg"; fi
-  if [ -n "$autopause" ]; then
-  printf -- '    Powersave:     %s\n' "$autopause"; fi
   printf -- '    Geometry:      %s\n' "$2"
   printf -- '    Screen:        %s\n' "$3"
   
