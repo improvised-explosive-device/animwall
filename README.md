@@ -9,12 +9,13 @@ For fun.
 ## Usage
 
 ```
-$ animwall [ -p -w -s <scaling_mode> -f /path/to/wallpaper ]
- --<param>        - Pass parameters to mpv, eg. '--scale=nearest'.
- -f, -file        - Load wallpaper from file instead of animwall.conf.
- -p, -powersave   - Pause mpv when the desktop is not active.
- -w, -wpgtk       - Send first frame of video to wpgtk and apply color-scheme.
- -h, -help        - You are here.
+$ animwall [ -a <params> -f <path> -p -w ]
+ -a, -arg <params>   - Pass args beginning with "--" to mpv, eg. --scale=nearest.
+ -f, -file <path>    - Load wallpaper from file instead of animwall.conf.
+ -p, -powersave      - Pause mpv when the desktop is inactive.
+ -w, -wpg, -wpgtk    - Generate & apply wpgtk theme from first frame.
+ -h, -help           - You are here.
+
 ```
 
 Ok, fine it's not that simple.
