@@ -10,7 +10,7 @@ For fun.
 
 ```
 $ animwall [ -a <params> -f <path> -p -w ]
- -a, -arg <params>   - Pass args beginning with "--" to mpv, eg. --scale=nearest.
+ -a, -arg <params>   - Pass args beginning with "--" to mpv, ex. --scale=nearest.
  -f, -file <path>    - Load wallpaper from file instead of animwall.conf.
  -p, -powersave      - Pause mpv when the desktop is inactive.
  -w, -wpg, -wpgtk    - Generate & apply wpgtk theme from first frame.
