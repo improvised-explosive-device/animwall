@@ -24,27 +24,19 @@ __nice_value=19
 # Arguments
 for arg in $@; do
 
-  # Get parameter after argument
-  param=$(echo $@ | grep -oP "(?<=$arg )[^ ]+")
-  param_mpv=$(echo $@ | egrep -o "(--(*\S+))")
-
   if [[ "$arg" =~ ^(-a|-arg)$ ]]; then
-    for prm in "$param_mpv"; do :; done # dump mpv args into $prm
-    arglist=$(echo "$prm")
-    arglist_nb=$(echo $prm | sed 's:\n: :g')
+    for prm in "$(echo $@ | egrep -o "(--(*\S+))")"; do :; done # dump mpv args into $prm
   fi
 
   if [[ "$arg" =~ ^(-f|-file)$ ]]; then
-    wallpaper_file=$param
+    wallpaper_file=$(echo $@ | grep -oP "(?<=$arg )[^ ]+") # get parameter after argument
     file="*"
     printf -- '- Manual mode enabled, overriding wallpaper..\n'
   fi
 
   if [[ "$arg" =~ ^(-p|-powersave)$ ]]; then
-    req=wmctrl
-    req2=socat
-    if command -v $req > /dev/null && command -v $req2 > /dev/null; then
-      autopause=on
+    if command -v wmctrl > /dev/null && command -v socat > /dev/null; then
+      autopause="watchdog &"
       printf -- '- Auto-pause enabled.\n'
     else
       printf -- '- You must have both "%s" & "%s" installed to to use powersave mode.\n' "$req" "$req2"
@@ -52,11 +44,10 @@ for arg in $@; do
   fi
 
   if [[ "$arg" =~ ^(-w|-wpg|-wpgtk)$ ]]; then
-    req=wpg
-    if command -v $req > /dev/null; then
+    if command -v wpg > /dev/null; then
       applytheme=1
     else
-      printf -- '- You must have "%s" installed to generate & apply gtk theme.\n' "$req"
+      printf -- '- You must have "wpg" installed to generate & apply gtk theme.\n'
     fi
   fi
 
@@ -117,7 +108,7 @@ wrapped()
   # CLI
   printf -- '\n'
   printf -- '[ANIMWALL]: Launching... \n'
-  printf -- '    Wallpaper-mpv: %s %s\n' "$1$file" "$arglist_nb"
+  printf -- '    Wallpaper-mpv: %s %s\n' "$1$file" "$(echo $prm | sed 's:\n: :g')"
   if [ -n "$jpeg" ]; then
   printf -- '    Wallpaper-wpg: %s\n' "$jpeg"; fi
   printf -- '    Geometry:      %s\n' "$2"
@@ -150,7 +141,7 @@ wrapped()
     --hwdec \
     --stop-screensaver=no \
     --input-ipc-server=/tmp/mpvsocket \
-    $arglist
+    $(echo "$prm")
 }
 
 cancel()
