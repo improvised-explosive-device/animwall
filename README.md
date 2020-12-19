@@ -15,7 +15,6 @@ $ animwall [ -a <params> -f <path> -p -w ]
  -p, -powersave      - Pause mpv when the desktop is inactive.
  -w, -wpg, -wpgtk    - Generate & apply wpgtk theme from first frame.
  -h, -help           - You are here.
-
 ```
 
 Ok, fine it's not that simple.
