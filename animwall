@@ -40,7 +40,7 @@ for arg in $@; do
       autopause=1
       printf -- '- Auto-pause enabled.\n'
     else
-      printf -- '- You must have both wmctrl & socat installed to to use powersave mode.\n'
+      printf -- '- You must have both "wmctrl" & "socat" installed to to use powersave mode.\n'
     fi
   fi
 
