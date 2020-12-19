@@ -21,22 +21,108 @@
 # Lowest priority, super nice (make this number smaller to increase priority, cannot go below 0)
 __nice_value=19
 
-# PID list, do not touch
-__pids=""
+# Arguments
+for arg in "$@"; do
+  # Get parameter after argument
+  param=$(echo $@ | grep -oP "(?<=$arg )[^ ]+")
 
-# $1 wallpaper
-# $2 geometry
-# $3 screen
+  if [ "$arg" == "-s" ] || [ "$arg" == "-scaling" ]; then 
+    scaling_mode=$param
+    scale="--scale=$scaling_mode"
+  fi
+
+  if [ "$arg" == "-f" ] || [ "$arg" == "-file" ]; then
+    wallpaper_file=$param
+    file="*"
+    printf -- '- Manual mode enabled, overriding wallpaper..\n'
+  fi
+
+  if [ "$arg" == "-p" ] || [ "$arg" == "-powersave" ]; then
+    req=wmctrl
+    req2=socat
+    if command -v $req > /dev/null && command -v $req2 > /dev/null; then
+      autopause=on
+    else
+      printf -- '- You must have both "%s" & "%s" installed to to use powersave mode.\n' "$req" "$req2"
+    fi
+  fi
+
+  if [ "$arg" == "-w" ] || [ "$arg" == "-wpgtk" ] || [ "$arg" == "-wpg" ]; then
+    req=wpg
+    if command -v $req > /dev/null; then
+      applytheme=1
+    else
+      printf -- '- You must have "%s" installed to generate & apply gtk theme.\n' "$req"
+    fi
+  fi
+
+  if [ "$arg" == "-h" ] || [ "$arg" == "-help" ]; then
+    printf -- '\n'
+    printf -- 'Usage: animwall [ -p -w -s <scaling_mode> -f /path/to/wallpaper ]\n'
+    printf -- '\n'
+    printf -- ' -s, -scaling     - Choose mpv scaling mode. https://mpv.io/manual/master/#gpu-renderer-options\n'
+    printf -- ' -f, -file        - Specify wallpaper to load instead of animwall.conf.\n'
+    printf -- ' -p, -powersave   - Wallpaper will be paused when the desktop is not active to conserve power and performance.\n'
+    printf -- ' -w, -wpgtk       - Send first frame of video to wpgtk and apply color-scheme.\n'
+    printf -- ' -h, -help        - You are here.\n'
+    printf -- '\n'
+    exit
+  fi
+done
+
+# Auto-pause to conserve system resources
+# Only plays when 'Show Desktop' is active
+watchdog() 
+{
+  paused=false
+  sleep 1
+  while true; do
+    if [ $(wmctrl -m | tail -n 1 | grep -oE '[^ ]+$') = OFF ] && [ $paused = false ]; then
+      echo '{"command": ["set_property", "pause", "yes"] }' | socat - /tmp/mpvsocket > /dev/null
+      paused=true
+    elif [ $(wmctrl -m | tail -n 1 | grep -oE '[^ ]+$') = ON ] && [ $paused = true ]; then
+      echo '{"command": ["set_property", "pause", "no"] }' | socat - /tmp/mpvsocket > /dev/null
+      paused=false
+    fi
+    sleep 1
+  done
+}
+
+# wpgtk integration
+animwpg()
+{
+  jpeg=$1.jpeg # store filename
+  ffmpeg -hide_banner -i "$1" -vframes 1 "$jpeg" # extract first frame of video
+  wpg -s $jpeg
+  wpg -a $jpeg # set as wpgtk colorscheme
+  wal -R # reload pywal
+  cat /home/dog/.cache/wal/sequences
+  xfconf-query -c xsettings -p /Net/ThemeName -s "FlatColor" & # apply gtk2
+  gsettings set org.gnome.desktop.interface gtk-theme FlatColor & # apply gtk3
+  if command -v pywalfox > /dev/null; then
+    pywalfox update # reload pywalfox
+  else
+    printf -- '- pywalfox not installed, moving on...\n'
+  fi
+}
+
+# Xwinwrap / MPV wrapper
+# $1 wallpaper, $2 geometry, $3 screen
 wrapped()
 {
+  # CLI
+  printf -- '\n'
   printf -- '[ANIMWALL]: Launching...\n'
-  printf -- '    Wallpaper: "%s"\n' "$1"
-  printf -- '    Geometry:  "%s"\n' "$2"
-  printf -- '    Screen:    "%s"\n' "$3"
-
+  printf -- '    Wallpaper-mpv: %s %s %s\n' "$1$file" "$scale"
+  if [ -n "$jpeg" ]; then
+  printf -- '    Wallpaper-wpg: %s\n' "$jpeg"; fi
+  if [ -n "$autopause" ]; then
+  printf -- '    Powersave:     %s\n' "$autopause"; fi
+  printf -- '    Geometry:      %s\n' "$2"
+  printf -- '    Screen:        %s\n' "$3"
+  
   # Options "-un" only used by xwinwrap-git
   # Will not work with shantz-xwinwrap-git
-
   # Uses deprecated -wid option instead of --wid because
   # xwinwrap will only interpret the WID as window id if it is
   # on its own, attaching it with equals breaks it.
@@ -59,7 +145,9 @@ wrapped()
     --no-keepaspect \
     --no-input-default-bindings \
     --hwdec \
-    --stop-screensaver=no
+    --stop-screensaver=no \
+    --input-ipc-server=/tmp/mpvsocket \
+    $scale
 }
 
 cancel()
@@ -79,20 +167,14 @@ cancel()
 
 main()
 {
-  if ! command -v mpv > /dev/null; then
-    printf -- 'You must have "mpv" installed.\n'
-    return 1
-  fi
-
-  if ! command -v xwinwrap > /dev/null; then
-    printf -- 'You must have "xwinwrap" installed.\n'
-    return 1
-  fi
-
-  if ! command -v nice > /dev/null; then
-    printf -- 'You must have "nice" installed.\n'
-    return 1
-  fi
+  # Check dependencies
+  req_main="mpv xwinwrap nice"
+  for val in $req_main; do
+      if ! command -v $val > /dev/null; then
+        printf -- '- Missing required dependency: "%s"\n' "$val"
+        return 1
+      fi
+  done
 
   # Trap return signals
   trap cancel INT TERM
@@ -102,15 +184,15 @@ main()
   config_dir="${XDG_CONFIG_DIR:-"${HOME}/.config"}/animwall"
   config_location="${config_dir}/animwall.conf"
   if [ -f "${config_location}" ] && [ -r "${config_location}" ]; then
-    printf -- 'Reading animwall.conf from %s\n' "${config_location}"
+    printf -- '- Reading %s..\n' "${config_location}"
     animwall_configs="$(cat -- "${config_location}")"
   else
-    printf -- 'Could not find animwall.conf file at %s\n' "${config_location}"
-    printf -- 'Creating example file...\n'
+    printf -- '- Could not find animwall.conf file at %s\n' "${config_location}"
+    printf -- '- Creating example file...\n'
 
     # Make directory
     mkdir -p "${config_dir}" || {
-      printf -- 'Failed to make configuration directory at: %s' "${config_dir}"
+      printf -- '- Failed to make configuration directory at: %s' "${config_dir}"
       return 1
     }
 
@@ -129,11 +211,6 @@ EOF
     return 1
   fi
 
-  if [ -z "${animwall_configs}" ]; then
-    printf -- 'Animwall config was empty!\n'
-    return 1
-  fi
-
   # Prepare IFS
   # Split by lines only instead of whitespace
   old_ifs="${IFS}"
@@ -141,40 +218,57 @@ EOF
 '
 
   # Parse config file
+  if [ -z "${animwall_configs}" ]; then
+    printf -- '- Animwall config was empty!\n'
+    return 1
+  fi  
+
   for config in ${animwall_configs}; do
     case "${config}" in
       \#*)
-        printf -- 'Ignore line with comment: %s\n' "${config}"
+        printf -- '- Ignore line with comment: %s\n' "${config}" > /dev/null
         continue
         ;;
       *)
         ;;
     esac
 
+    # Split wallpaper string
     split_config="$(printf -- "%s" "${config}" | tr ':' ' ')"
-    wallpaper="$(printf -- "%s" "${split_config}" | awk '{ print $1 }')"
     geometry="$(printf -- "%s" "${split_config}" | awk '{ print $2 }')"
     screen="$(printf -- "%s" "${split_config}" | awk '{ print $3 }')"
+    wallpaper_conf="$(printf -- "%s" "${split_config}" | awk '{ print $1 }')"
+    
+    # Use wallpaper from parameter if present
+    if [ -n "$file" ]; then
+      wallpaper=$wallpaper_file
+    else
+      wallpaper=$wallpaper_conf
+    fi
 
     # In case the wallpaper path has ~ as HOME, we replace it
     # Replace all $HOME with literal HOME
     wallpaper="$(printf -- "%s" "${wallpaper}" | sed "s|^\~|\$HOME|g" | sed "s|^\$HOME|${HOME}|g" )"
 
+    # Launch wpgtk
+    if [ -n "$applytheme" ]; then
+      animwpg "${wallpaper}"
+    fi
+
+    # Launch MPV
     if [ -n "${wallpaper}" ] && [ -n "${geometry}" ] && [ -n "${screen}" ]; then
       wrapped "${wallpaper}" "${geometry}" "${screen}" &
       __pids="$! ${__pids}"
     else
-      if [ -z "${wallpaper}" ]; then
-        printf -- 'Missing wallpaper path in config: %s\n' "${config}"
-      fi
+      if [ -z "${wallpaper}" ]; then printf -- '- Missing wallpaper path in config: %s\n' "${config}"; fi
+      if [ -z "${geometry}" ]; then printf -- '- Missing geometry in config: %s\n' "${config}"; fi
+      if [ -z "${screen}" ]; then printf -- '- Missing screen in config: %s\n' "${config}"; fi
+    fi
 
-      if [ -z "${geometry}" ]; then
-        printf -- 'Missing geometry in config: %s\n' "${config}"
-      fi
-
-      if [ -z "${screen}" ]; then
-        printf -- 'Missing screen in config: %s\n' "${config}"
-      fi
+    # Launch watchdog
+    if [ -n "$autopause" ]; then
+      watchdog &
+      __pids="$! ${__pids}"
     fi
 
     unset split_config
