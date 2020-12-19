@@ -68,11 +68,11 @@ for arg in "$@"; do
     printf -- '\n'
     printf -- 'Usage: animwall [ -a <params> -f <path> -p -w ]\n'
     printf -- '\n'
-    printf -- ' -a, -arg <params>   - Pass args beginning with "--" to mpv, eg. '--scale=nearest'.\n'
-    printf -- ' -f, -file <path>    - Load wallpaper from file instead of animwall.conf.\n'
-    printf -- ' -p, -powersave      - Pause mpv when the desktop is inactive.\n'
-    printf -- ' -w, -wpg, -wpgtk    - Generate & apply wpgtk theme from first frame.\n'
-    printf -- ' -h, -help           - You are here.\n'
+    printf -- ' -a , -arg <params>  - Pass args beginning with "--" to mpv, ex. '--scale=nearest'.\n'
+    printf -- ' -f , -file <path>   - Load wallpaper from file instead of animwall.conf.\n'
+    printf -- ' -p , -powersave     - Pause mpv when the desktop is inactive.\n'
+    printf -- ' -w , -wpg, -wpgtk   - Generate & apply wpgtk theme from first frame.\n'
+    printf -- ' -h , -help          - You are here.\n'
     printf -- '\n'
     exit
   fi
@@ -157,7 +157,6 @@ wrapped()
     --stop-screensaver=no \
     --input-ipc-server=/tmp/mpvsocket \
     $arglist
-    $scale
 }
 
 cancel()
