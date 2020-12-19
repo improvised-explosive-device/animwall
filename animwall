@@ -22,14 +22,17 @@
 __nice_value=19
 
 # Arguments
+# Enable mpv arguments
+param_mpv=$(echo "$@" | egrep -o "(--(*\S+))")
+if [ -n "$param_mpv" ]; then
+  for prm in "$param_mpv"; do :; done
+  arglist=$(echo "$prm")
+  arglist_nb=$(echo $prm | sed 's:\n: :g')
+fi
+
 for arg in "$@"; do
   # Get parameter after argument
   param=$(echo $@ | grep -oP "(?<=$arg )[^ ]+")
-
-  if [ "$arg" == "-s" ] || [ "$arg" == "-scaling" ]; then 
-    scaling_mode=$param
-    scale="--scale=$scaling_mode"
-  fi
 
   if [ "$arg" == "-f" ] || [ "$arg" == "-file" ]; then
     wallpaper_file=$param
@@ -58,9 +61,9 @@ for arg in "$@"; do
 
   if [ "$arg" == "-h" ] || [ "$arg" == "-help" ]; then
     printf -- '\n'
-    printf -- 'Usage: animwall [ -p -w -s <scaling_mode> -f /path/to/wallpaper ]\n'
+    printf -- 'Usage: animwall [ --<param> -p -w -s <scaling_mode> -f /path/to/wallpaper ]\n'
     printf -- '\n'
-    printf -- ' -s, -scaling     - Specify mpv scaling algorithm. https://mpv.io/manual/master/#gpu-renderer-options\n'
+    printf -- ' --<param>        - Pass parameters to mpv, eg. '--scale=nearest'.\n'
     printf -- ' -f, -file        - Load wallpaper from file instead of animwall.conf.\n'
     printf -- ' -p, -powersave   - Pause mpv when the desktop is not active.\n'
     printf -- ' -w, -wpgtk       - Send first frame of video to wpgtk and apply color-scheme.\n'
@@ -106,14 +109,15 @@ animwpg()
   fi
 }
 
+
 # Xwinwrap / MPV wrapper
 # $1 wallpaper, $2 geometry, $3 screen
 wrapped()
 {
   # CLI
   printf -- '\n'
-  printf -- '[ANIMWALL]: Launching...\n'
-  printf -- '    Wallpaper-mpv: %s %s %s\n' "$1$file" "$scale"
+  printf -- '[ANIMWALL]: Launching... \n'
+  printf -- '    Wallpaper-mpv: %s %s\n' "$1$file" "$arglist_nb"
   if [ -n "$jpeg" ]; then
   printf -- '    Wallpaper-wpg: %s\n' "$jpeg"; fi
   if [ -n "$autopause" ]; then
@@ -142,11 +146,12 @@ wrapped()
     --player-operation-mode=cplayer \
     --no-audio \
     --panscan=1.0 \
-    --no-keepaspect \
+    --keepaspect \
     --no-input-default-bindings \
     --hwdec \
     --stop-screensaver=no \
     --input-ipc-server=/tmp/mpvsocket \
+    $arglist
     $scale
 }
 
