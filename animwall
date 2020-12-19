@@ -22,28 +22,25 @@
 __nice_value=19
 
 # Arguments
-for arg in "$@"; do
+for arg in $@; do
 
   # Get parameter after argument
   param=$(echo $@ | grep -oP "(?<=$arg )[^ ]+")
-  param_mpv=$(echo "$@" | egrep -o "(--(*\S+))")
+  param_mpv=$(echo $@ | egrep -o "(--(*\S+))")
 
-  # -a, -arg : Pass arguments starting with '--' to mpv.
-  if [ "$arg" == "-a" ] || [ "$arg" == "-arg" ]; then
-    for prm in "$param_mpv"; do :; done
+  if [[ "$arg" =~ ^(-a|-arg)$ ]]; then
+    for prm in "$param_mpv"; do :; done # dump mpv args into $prm
       arglist=$(echo "$prm")
       arglist_nb=$(echo $prm | sed 's:\n: :g')
   fi
 
-  # -f, -file : Specify wallpaper manually.
-  if [ "$arg" == "-f" ] || [ "$arg" == "-file" ]; then
+  if [[ "$arg" =~ ^(-f|-file)$ ]]; then
     wallpaper_file=$param
     file="*"
     printf -- '- Manual mode enabled, overriding wallpaper..\n'
   fi
 
-  # -p, -powersave : Auto-pause.
-  if [ "$arg" == "-p" ] || [ "$arg" == "-powersave" ]; then
+  if [[ "$arg" =~ ^(-p|-powersave)$ ]]; then
     req=wmctrl
     req2=socat
     if command -v $req > /dev/null && command -v $req2 > /dev/null; then
@@ -54,8 +51,7 @@ for arg in "$@"; do
     fi
   fi
 
-  # -w, -wpg, -wpgtk : Generate & apply gtk theme from first frame.
-  if [ "$arg" == "-w" ] || [ "$arg" == "-wpgtk" ] || [ "$arg" == "-wpg" ]; then
+  if [[ "$arg" =~ ^(-w|-wpg|-wpgtk)$ ]]; then
     req=wpg
     if command -v $req > /dev/null; then
       applytheme=1
@@ -64,8 +60,7 @@ for arg in "$@"; do
     fi
   fi
 
-  # -h, -help : Help section.
-  if [ "$arg" == "-h" ] || [ "$arg" == "-help" ]; then
+  if [[ "$arg" =~ ^(-h|-help)$ ]]; then
     printf -- '\n'
     printf -- 'Usage: animwall [ -a <params> -f <path> -p -w ]\n'
     printf -- '\n'
