@@ -25,21 +25,22 @@ __nice_value=19
 for arg in $@; do
 
   if [[ "$arg" =~ ^(-a|-arg)$ ]]; then
-    for prm in "$(echo $@ | egrep -o "(--(*\S+))")"; do :; done # dump mpv args into $prm
+    for prm in "$(echo $@ | egrep -o "(--(*\S+))")"; do
+      : # dump mpv args into $prm
+    done
   fi
 
   if [[ "$arg" =~ ^(-f|-file)$ ]]; then
     wallpaper_file=$(echo $@ | grep -oP "(?<=$arg )[^ ]+") # get parameter after argument
-    file="*"
     printf -- '- Manual mode enabled, overriding wallpaper..\n'
   fi
 
   if [[ "$arg" =~ ^(-p|-powersave)$ ]]; then
     if command -v wmctrl > /dev/null && command -v socat > /dev/null; then
-      autopause="watchdog &"
+      autopause=1
       printf -- '- Auto-pause enabled.\n'
     else
-      printf -- '- You must have both "%s" & "%s" installed to to use powersave mode.\n' "$req" "$req2"
+      printf -- '- You must have both wmctrl & socat installed to to use powersave mode.\n'
     fi
   fi
 
@@ -55,7 +56,7 @@ for arg in $@; do
     printf -- '\n'
     printf -- 'Usage: animwall [ -a <params> -f <path> -p -w ]\n'
     printf -- '\n'
-    printf -- ' -a , -arg <params>  - Pass args beginning with "--" to mpv, ex. '--scale=nearest'.\n'
+    printf -- ' -a , -arg <params>  - Pass args beginning with "--" to mpv, ex. "--scale=nearest".\n'
     printf -- ' -f , -file <path>   - Load wallpaper from file instead of animwall.conf.\n'
     printf -- ' -p , -powersave     - Pause mpv when the desktop is inactive.\n'
     printf -- ' -w , -wpg, -wpgtk   - Generate & apply wpgtk theme from first frame.\n'
@@ -108,7 +109,7 @@ wrapped()
   # CLI
   printf -- '\n'
   printf -- '[ANIMWALL]: Launching... \n'
-  printf -- '    Wallpaper-mpv: %s %s\n' "$1$file" "$(echo $prm | sed 's:\n: :g')"
+  printf -- '    Wallpaper-mpv: %s %s\n' "$1" "$(echo $prm | sed 's:\n: :g')"
   if [ -n "$jpeg" ]; then
   printf -- '    Wallpaper-wpg: %s\n' "$jpeg"; fi
   printf -- '    Geometry:      %s\n' "$2"
@@ -234,7 +235,7 @@ EOF
     wallpaper_conf="$(printf -- "%s" "${split_config}" | awk '{ print $1 }')"
     
     # Use wallpaper from parameter if present
-    if [ -n "$file" ]; then
+    if [ -n "$wallpaper_file" ]; then
       wallpaper=$wallpaper_file
     else
       wallpaper=$wallpaper_conf
