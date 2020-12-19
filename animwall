@@ -115,7 +115,6 @@ animwpg()
   fi
 }
 
-
 # Xwinwrap / MPV wrapper
 # $1 wallpaper, $2 geometry, $3 screen
 wrapped()
@@ -142,16 +141,17 @@ wrapped()
     -nf \
     -b \
     -un \
-    -- nice -n "${__nice_value}" mpv \
+    -- nice -n "${__nice_value}" mpv 1> /dev/null \
     -wid WID "$1" \
     --no-osc \
     --no-osd-bar \
-    --loop-file \
-    --player-operation-mode=cplayer \
+    --no-input-default-bindings \
+    --no-config \
     --no-audio \
+    --player-operation-mode=cplayer \
     --panscan=1.0 \
     --keepaspect \
-    --no-input-default-bindings \
+    --loop-file \
     --hwdec \
     --stop-screensaver=no \
     --input-ipc-server=/tmp/mpvsocket \
