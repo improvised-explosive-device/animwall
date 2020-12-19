@@ -30,8 +30,8 @@ for arg in $@; do
 
   if [[ "$arg" =~ ^(-a|-arg)$ ]]; then
     for prm in "$param_mpv"; do :; done # dump mpv args into $prm
-      arglist=$(echo "$prm")
-      arglist_nb=$(echo $prm | sed 's:\n: :g')
+    arglist=$(echo "$prm")
+    arglist_nb=$(echo $prm | sed 's:\n: :g')
   fi
 
   if [[ "$arg" =~ ^(-f|-file)$ ]]; then
