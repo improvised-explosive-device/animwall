@@ -12,7 +12,7 @@ Required: *xwinwrap, mpv, nice*
 
 Theming: *wpgtk, pywalfox*
 
-Auto-pause: *wmctrl, socat*
+Auto-pause: *wmctrl, xprop, socat*
 
 ## What is this for
 
