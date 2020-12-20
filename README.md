@@ -1,6 +1,10 @@
-# animwall
+# animwall-wpgtk
 
-An orchestrator using xwinwrap and mpv to launch animated/gif desktop wallpapers
+An orchestrator using xwinwrap and mpv to launch animated/gif desktop wallpapers.
+
+This fork adds support for simultanously generating and applying wpgtk themes,
+arguments, and automatically pausing the video when the desktop is inactive.
+(The latter is hacky for the time being, and will be revised.)
 
 ## What is this for
 
@@ -9,12 +13,12 @@ For fun.
 ## Usage
 
 ```
-$ animwall [ -a <params> -f <path> -p -w ]
- -a , -arg <params>  - Pass args beginning with "--" to mpv, ex. --scale=nearest.
- -f , -file <path>   - Load wallpaper from file instead of animwall.conf.
- -p , -powersave     - Pause mpv when the desktop is inactive.
- -w , -wpg, -wpgtk   - Generate & apply wpgtk theme from first frame.
- -h , -help          - You are here.
+$ animwall [ --<arg> -f <path> -p -w ]
+ --<arg>    - Pass args beginning with "--" to mpv, ex. "--scale=nearest".
+ -f <path>  - Load wallpaper from file instead of animwall.conf.
+ -p         - Pause mpv when the desktop is inactive.
+ -w         - Generate & apply wpgtk theme from first frame.
+ -h         - You are here.
 ```
 
 Ok, fine it's not that simple.
