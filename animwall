@@ -66,19 +66,34 @@ for arg in $@; do
 done
 
 # Auto-pause to conserve system resources
-# Only plays when 'Show Desktop' is active
 watchdog() 
 {
   paused=false
   sleep 1
   while true; do
-    if [ $(wmctrl -m | tail -n 1 | grep -oE '[^ ]+$') = OFF ] && [ $paused = false ]; then
-      echo '{"command": ["set_property", "pause", "yes"] }' | socat - /tmp/mpvsocket > /dev/null
-      paused=true
-    elif [ $(wmctrl -m | tail -n 1 | grep -oE '[^ ]+$') = ON ] && [ $paused = true ]; then
-      echo '{"command": ["set_property", "pause", "no"] }' | socat - /tmp/mpvsocket > /dev/null
-      paused=false
-    fi
+      count=0
+
+      # List all open window ids
+      for id in $(wmctrl -l | cut -f1 -d' '); do
+        if [ "$id" == "0x01600011" ]; then continue; fi #ignore desktop window
+        if [[ -n $(xprop -id "$id" _NET_WM_OPAQUE_REGION | grep -Eo '[0-9]{4}') ]]; then
+            ((count++))
+        elif [[ ! $(xprop -id "$id" _NET_WM_OPAQUE_REGION | grep -Eo '[0-9]{4}') ]]; then
+          continue
+        fi
+      done
+
+      # If any window is >4 digits in pixel size or desktop is in focus, play video.
+      # If any window is <4digits in pixels, pause video.
+      # Some windows don't have the '_NET_WM_OPAQUE_REGION' attribute. IDK why.
+      if [ $count -gt 0 ] && [ $(xprop -root _NET_ACTIVE_WINDOW | cut -f2 -d '#' | cut -f1 -d ',') != $(xprop -root XFCE_DESKTOP_WINDOW | cut -f2 -d '#') ] && [ $paused == false ]; then
+        echo '{"command": ["set_property", "pause", "yes"] }' | socat - /tmp/mpvsocket > /dev/null
+        paused=true
+      fi
+      if [ $count == 0 ] || [ $(xprop -root _NET_ACTIVE_WINDOW | cut -f2 -d '#' | cut -f1 -d ',') == $(xprop -root XFCE_DESKTOP_WINDOW | cut -f2 -d '#') ] && [ $paused == true ]; then
+        echo '{"command": ["set_property", "pause", "no"] }' | socat - /tmp/mpvsocket > /dev/null
+        paused=false
+      fi
     sleep 1
   done
 }
