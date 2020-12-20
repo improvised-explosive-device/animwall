@@ -83,9 +83,9 @@ watchdog()
         fi
       done
 
-      # If any window is >4 digits in pixel size or desktop is in focus, play video.
-      # If any window is <4digits in pixels, pause video.
-      # Some windows don't have the '_NET_WM_OPAQUE_REGION' attribute. IDK why.
+      # If any window is >1000px or desktop is in focus, play video.
+      # If any window is <1000px or desktop is not in focus, pause video.
+      # Some windows don't have the '_NET_WM_OPAQUE_REGION' attribute. IDK why, I'm a noob.
       if [ $count -gt 0 ] && [ $(xprop -root _NET_ACTIVE_WINDOW | cut -f2 -d '#' | cut -f1 -d ',') != $(xprop -root XFCE_DESKTOP_WINDOW | cut -f2 -d '#') ] && [ $paused == false ]; then
         echo '{"command": ["set_property", "pause", "yes"] }' | socat - /tmp/mpvsocket > /dev/null
         paused=true
