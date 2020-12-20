@@ -19,16 +19,15 @@
 #   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 # Lowest priority, super nice (make this number smaller to increase priority, cannot go below 0)
-__nice_value=19
+nice_value=19
 
 # Arguments
 for arg in $@; do
 
-  if [[ "$arg" =~ ^(-a|-arg)$ ]]; then
-    for prm in "$(echo $@ | egrep -o "(--(*\S+))")"; do
-      : # dump mpv args into $prm
-    done
-  fi
+  for prm in "$(echo $@ | egrep -o "(--(*\S+))")"; do
+    : # dump mpv args into $prm
+  done
+  
 
   if [[ "$arg" =~ ^(-f|-file)$ ]]; then
     wallpaper_file=$(echo $@ | grep -oP "(?<=$arg )[^ ]+") # get parameter after argument
@@ -54,13 +53,13 @@ for arg in $@; do
 
   if [[ "$arg" =~ ^(-h|-help)$ ]]; then
     printf -- '\n'
-    printf -- 'Usage: animwall [ -a <params> -f <path> -p -w ]\n'
+    printf -- 'Usage: animwall [ --<arg> -f <path> -p -w ]\n'
     printf -- '\n'
-    printf -- ' -a , -arg <params>  - Pass args beginning with "--" to mpv, ex. "--scale=nearest".\n'
-    printf -- ' -f , -file <path>   - Load wallpaper from file instead of animwall.conf.\n'
-    printf -- ' -p , -powersave     - Pause mpv when the desktop is inactive.\n'
-    printf -- ' -w , -wpg, -wpgtk   - Generate & apply wpgtk theme from first frame.\n'
-    printf -- ' -h , -help          - You are here.\n'
+    printf -- ' --<arg>    - Pass args beginning with "--" to mpv, ex. "--scale=nearest".\n'
+    printf -- ' -f <path>  - Load wallpaper from file instead of animwall.conf.\n'
+    printf -- ' -p         - Pause mpv when the desktop is inactive.\n'
+    printf -- ' -w         - Generate & apply wpgtk theme from first frame.\n'
+    printf -- ' -h         - You are here.\n'
     printf -- '\n'
     exit
   fi
@@ -93,8 +92,6 @@ animwpg()
   wpg -a $jpeg # set as wpgtk colorscheme
   wal -R # reload pywal
   cat /home/dog/.cache/wal/sequences
-  xfconf-query -c xsettings -p /Net/ThemeName -s "FlatColor" & # apply gtk2
-  gsettings set org.gnome.desktop.interface gtk-theme FlatColor & # apply gtk3
   if command -v pywalfox > /dev/null; then
     pywalfox update # reload pywalfox
   else
@@ -109,8 +106,7 @@ wrapped()
   # CLI
   printf -- '\n'
   printf -- '[ANIMWALL]: Launching... \n'
-  printf -- '    Wallpaper-mpv: %s %s\n' "$1" "$(echo $prm | sed 's:\n: :g')"
-  if [ -n "$jpeg" ]; then
+  printf -- '    Wallpaper-mpv: %s %s\n' "$1" "$(echo $prm | sed 's:\n: :g')"; if [ -n "$jpeg" ]; then
   printf -- '    Wallpaper-wpg: %s\n' "$jpeg"; fi
   printf -- '    Geometry:      %s\n' "$2"
   printf -- '    Screen:        %s\n' "$3"
@@ -120,7 +116,7 @@ wrapped()
   # Uses deprecated -wid option instead of --wid because
   # xwinwrap will only interpret the WID as window id if it is
   # on its own, attaching it with equals breaks it.
-  exec nice -n "${__nice_value}" xwinwrap \
+  exec nice -n "${nice_value}" xwinwrap \
     -g "$2" \
     -ni \
     -st \
@@ -128,7 +124,7 @@ wrapped()
     -nf \
     -b \
     -un \
-    -- nice -n "${__nice_value}" mpv 1> /dev/null \
+    -- nice -n "${nice_value}" mpv 1> /dev/null \
     -wid WID "$1" \
     --no-osc \
     --no-osd-bar \
@@ -148,7 +144,7 @@ wrapped()
 cancel()
 {
   # Kill runaway pids
-  for p in ${__pids}; do
+  for p in ${pids}; do
     p="$(printf -- "%s" "${p}" \
       | sed 's/^[[:blank:]]*//' | sed 's/[[:blank:]]*$//')"
     if [ -n "${p}" ]; then
@@ -253,7 +249,7 @@ EOF
     # Launch MPV
     if [ -n "${wallpaper}" ] && [ -n "${geometry}" ] && [ -n "${screen}" ]; then
       wrapped "${wallpaper}" "${geometry}" "${screen}" &
-      __pids="$! ${__pids}"
+      pids="$! ${pids}"
     else
       if [ -z "${wallpaper}" ]; then printf -- '- Missing wallpaper path in config: %s\n' "${config}"; fi
       if [ -z "${geometry}" ]; then printf -- '- Missing geometry in config: %s\n' "${config}"; fi
@@ -263,7 +259,7 @@ EOF
     # Launch watchdog
     if [ -n "$autopause" ]; then
       watchdog &
-      __pids="$! ${__pids}"
+      pids="$! ${pids}"
     fi
 
     unset split_config
@@ -281,7 +277,7 @@ EOF
   # Do not quote so that this will split into a list, instead of a single,
   # space separated input
   # shellcheck disable=SC2086
-  wait ${__pids}
+  wait ${pids}
   cancel
 }
 
