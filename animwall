@@ -35,11 +35,11 @@ for arg in $@; do
   fi
 
   if [[ "$arg" =~ ^(-p|-powersave)$ ]]; then
-    if command -v wmctrl > /dev/null && command -v socat > /dev/null; then
+    if command -v wmctrl > /dev/null && command -v socat > /dev/null && command -v xprop > /dev/null; then
       autopause=1
       printf -- '- Auto-pause enabled.\n'
     else
-      printf -- '- You must have both "wmctrl" & "socat" installed to to use powersave mode.\n'
+      printf -- '- You must have "xprop", "wmctrl" & "socat" installed to to use powersave mode.\n'
     fi
   fi
 
@@ -74,11 +74,11 @@ watchdog()
       count=0
 
       # List all open window ids
-      for id in $(wmctrl -l | cut -f1 -d' '); do
-        if [ "$id" == "0x01600011" ]; then continue; fi #ignore desktop window
-        if [[ -n $(xprop -id "$id" _NET_WM_OPAQUE_REGION | grep -Eo '[0-9]{4}') ]]; then
+      for id in $(wmctrl -l | cut -f1 -d' ' | egrep -o '.{7}$'); do
+        if [ "$id" == "$(xprop -root XFCE_DESKTOP_WINDOW | egrep -o '.{7}$')" ]; then continue; fi # ignore desktop window
+        if [[ -n $(xprop -id 0x0"$id" _NET_WM_OPAQUE_REGION | grep -Eo '[0-9]{4}') ]]; then
             ((count++))
-        elif [[ ! $(xprop -id "$id" _NET_WM_OPAQUE_REGION | grep -Eo '[0-9]{4}') ]]; then
+        elif [[ ! $(xprop -id 0x0"$id" _NET_WM_OPAQUE_REGION | grep -Eo '[0-9]{4}') ]]; then
           continue
         fi
       done
