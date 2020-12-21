@@ -70,32 +70,37 @@ watchdog()
 {
   paused=false
   sleep 1
+  desktop=$(xprop -root _NET_DESKTOP_GEOMETRY | grep -Eo '[0-9]+' | tail -2)
+  desktop_split=(${desktop//\n/})
+  desktop_area=$(( desktop_split[0] * desktop_split[1] ))
   while true; do
-      count=0
+    count=0
 
-      # List all open window ids
-      for id in $(wmctrl -l | cut -f1 -d' ' | egrep -o '.{7}$'); do
-        if [ "$id" == "$(xprop -root XFCE_DESKTOP_WINDOW | egrep -o '.{7}$')" ]; then continue; fi # ignore desktop window
-        if [[ -n $(xprop -id 0x0"$id" _NET_WM_OPAQUE_REGION | grep -Eo '[0-9]{4}') ]]; then
-            ((count++))
-        elif [[ ! $(xprop -id 0x0"$id" _NET_WM_OPAQUE_REGION | grep -Eo '[0-9]{4}') ]]; then
-          continue
-        fi
-      done
+    # If any window is smaller than 75% of screen area OR desktop is in focus, play video.
+    # If any window is larger than 75% of screen area AND desktop is not in focus, pause video.
+    # Some windows don't have the '_NET_WM_OPAQUE_REGION' attribute. IDK why, I'm a noob.
+    for id in $(wmctrl -l | cut -f1 -d' ' | egrep -o '.{7}$'); do
+      if [ $id == "$(xprop -root XFCE_DESKTOP_WINDOW | egrep -o '.{7}$')" ]; then continue; fi # ignore desktop window
+      window=$(xprop -id 0x0"$id" _NET_WM_OPAQUE_REGION | grep -Eo '[0-9]+' | tail -2)
+      window_split=(${window//\n/})
+      window_area=$(( window_split[0] * window_split[1] ))
+      if [ $window_area -lt $(( $desktop_area * 75/100 )) ]; then
+        continue
+      else
+        ((count++))
+      fi
+    done
 
-      # If any window is >1000px or desktop is in focus, play video.
-      # If any window is <1000px or desktop is not in focus, pause video.
-      # Some windows don't have the '_NET_WM_OPAQUE_REGION' attribute. IDK why, I'm a noob.
-      if [ $count -gt 0 ] && [ $(xprop -root _NET_ACTIVE_WINDOW | cut -f2 -d '#' | cut -f1 -d ',') != $(xprop -root XFCE_DESKTOP_WINDOW | cut -f2 -d '#') ] && [ $paused == false ]; then
-        echo '{"command": ["set_property", "pause", "yes"] }' | socat - /tmp/mpvsocket > /dev/null
-        paused=true
-      fi
-      if [ $count == 0 ] || [ $(xprop -root _NET_ACTIVE_WINDOW | cut -f2 -d '#' | cut -f1 -d ',') == $(xprop -root XFCE_DESKTOP_WINDOW | cut -f2 -d '#') ] && [ $paused == true ]; then
-        echo '{"command": ["set_property", "pause", "no"] }' | socat - /tmp/mpvsocket > /dev/null
-        paused=false
-      fi
+    if [ $count -gt 0 ] && [ $(xprop -root _NET_ACTIVE_WINDOW | cut -f2 -d '#' | cut -f1 -d ',') != $(xprop -root XFCE_DESKTOP_WINDOW | cut -f2 -d '#') ] && [ $paused == false ]; then
+      echo '{"command": ["set_property", "pause", "yes"] }' | socat - /tmp/mpvsocket > /dev/null
+      paused=true
+    fi
+    if [ $count == 0 ] || [ $(xprop -root _NET_ACTIVE_WINDOW | cut -f2 -d '#' | cut -f1 -d ',') == $(xprop -root XFCE_DESKTOP_WINDOW | cut -f2 -d '#') ] && [ $paused == true ]; then
+      echo '{"command": ["set_property", "pause", "no"] }' | socat - /tmp/mpvsocket > /dev/null
+      paused=false
+    fi
     sleep 1
-  done
+  done 
 }
 
 # wpgtk integration
