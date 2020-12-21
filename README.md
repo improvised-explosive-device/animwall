@@ -3,7 +3,7 @@
 An orchestrator using xwinwrap and mpv to launch animated/gif desktop wallpapers.
 
 This fork adds support for simultanously generating and applying wpgtk themes,
-some arguments, and allows automatically pausing the video when the desktop is inactive.
+some arguments (incl. passing args to mpv), and automatically pauses the video when the desktop is inactive by launching with ```-p```.
 
 ## Dependencies
 
