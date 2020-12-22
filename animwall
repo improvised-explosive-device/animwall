@@ -35,12 +35,16 @@ for arg in $@; do
   fi
 
   if [[ "$arg" =~ ^(-p|-powersave)$ ]]; then
-    if command -v wmctrl > /dev/null && command -v socat > /dev/null && command -v xprop > /dev/null; then
-      autopause=1
-      printf -- '- Auto-pause enabled.\n'
-    else
-      printf -- '- You must have "xprop", "wmctrl" & "socat" installed to to use powersave mode.\n'
-    fi
+    req_pause="wmctrl socat xprop"
+    for val in $req_pause; do
+      if ! command -v $val > /dev/null; then
+        printf -- '- Missing required dependency: "%s"\n' "$val"
+        continue
+      else
+        autopause=1
+        printf -- '- Auto-pause enabled.\n' # FIX THIS APPEARING 3 TIMES
+      fi
+    done
   fi
 
   if [[ "$arg" =~ ^(-w|-wpg|-wpgtk)$ ]]; then
@@ -65,49 +69,43 @@ for arg in $@; do
   fi
 done
 
+
+
+
 # Auto-pause to conserve system resources
 watchdog() 
 {
   paused=false
   sleep 1
-  desktop=$(xprop -root _NET_DESKTOP_GEOMETRY | grep -Eo '[0-9]+' | tail -2)
-  desktop_split=(${desktop//\n/})
-  desktop_area=$(( desktop_split[0] * desktop_split[1] ))
   while true; do
-    count=0
-
-    # If any window is smaller than 75% of screen area OR desktop is in focus, play video.
-    # If any window is larger than 75% of screen area AND desktop is not in focus, pause video.
-    # Some windows don't have the '_NET_WM_OPAQUE_REGION' attribute. IDK why, I'm a noob.
-    for id in $(wmctrl -l | cut -f1 -d' ' | egrep -o '.{7}$'); do
-      if [ $id == "$(xprop -root XFCE_DESKTOP_WINDOW | egrep -o '.{7}$')" ]; then continue; fi # ignore desktop window
-      window=$(xprop -id 0x0"$id" _NET_WM_OPAQUE_REGION | grep -Eo '[0-9]+' | tail -2)
-      window_split=(${window//\n/})
-      window_area=$(( window_split[0] * window_split[1] ))
-      if [ $window_area -lt $(( $desktop_area * 75/100 )) ]; then
-        continue
-      else
-        ((count++))
+    MAX_FND=0
+    for w in $(xprop -notype -root _NET_CLIENT_LIST | cut -d'#' -f2 | tr ',' '\n' | awk '{print $1}'); do 
+      if [[ "$(xprop -id $w -notype _NET_WM_DESKTOP | cut -d' ' -f3)" -eq "$(xprop -root -notype _NET_CURRENT_DESKTOP | cut -d' ' -f3)" ]]; then
+  	    if xprop -id $w _NET_WM_STATE | grep -E "MAXIMIZED_HORZ.*MAXIMIZED_VERT" > /dev/null 2>&1; then
+  		    if xprop -id $w WM_STATE | grep -E "window state: Normal" > /dev/null 2>&1; then
+  			    MAX_FND=1
+  			    break
+  		    fi
+  	    fi
       fi
     done
-
-    if [ $count -gt 0 ] && [ $(xprop -root _NET_ACTIVE_WINDOW | cut -f2 -d '#' | cut -f1 -d ',') != $(xprop -root XFCE_DESKTOP_WINDOW | cut -f2 -d '#') ] && [ $paused == false ]; then
+    if [[ $MAX_FND -eq 1 ]]; then
       echo '{"command": ["set_property", "pause", "yes"] }' | socat - /tmp/mpvsocket > /dev/null
-      paused=true
-    fi
-    if [ $count == 0 ] || [ $(xprop -root _NET_ACTIVE_WINDOW | cut -f2 -d '#' | cut -f1 -d ',') == $(xprop -root XFCE_DESKTOP_WINDOW | cut -f2 -d '#') ] && [ $paused == true ]; then
+      paused=true		
+    elif [[ $MAX_FND -eq 0 ]]; then
       echo '{"command": ["set_property", "pause", "no"] }' | socat - /tmp/mpvsocket > /dev/null
       paused=false
     fi
     sleep 1
-  done 
+  done
+  exit 0
 }
 
 # wpgtk integration
 animwpg()
 {
   jpeg=$1.jpeg # store filename
-  ffmpeg -hide_banner -i "$1" -vframes 1 "$jpeg" # extract first frame of video
+  ffmpeg -hide_banner -i "$1" -vframes 1 -qscale:v 2 "$jpeg" # extract first frame of video
   wpg -s $jpeg
   wpg -a $jpeg # set as wpgtk colorscheme
   wal -R # reload pywal
